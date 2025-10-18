@@ -4,6 +4,9 @@ using UnityEngine;
 [RequireComponent(typeof(Animator))]
 public class PlayerCombat : MonoBehaviour
 {
+
+
+    public bool driveInputInternally = true; // default true for standalone; set false when using ComboRunner
     [Header("Input")]
     [Tooltip("Input button name for light attack (legacy Input Manager).")]
     public string lightAttackButton = "Fire1"; // LMB / Ctrl by default; change in Input settings
@@ -43,15 +46,16 @@ public class PlayerCombat : MonoBehaviour
 
     void Update()
     {
-        // simple cooldown
-        if (_cooldownTimer > 0f) _cooldownTimer -= Time.deltaTime;
+        if (driveInputInternally)
+        {    
+            if (_cooldownTimer > 0f) _cooldownTimer -= Time.deltaTime;
 
-        // Input → light attack trigger
-        if (!_attackLocked && _cooldownTimer <= 0f && Input.GetButtonDown(lightAttackButton))
-        {
-            _anim.ResetTrigger("LightAttack"); // optional safety
-            _anim.SetTrigger("LightAttack");
-            _attackLocked = true;              // unlocked by Attack_End() event
+         if (!_attackLocked && _cooldownTimer <= 0f && Input.GetButtonDown(lightAttackButton))
+         {
+          _anim.ResetTrigger("LightAttack");
+          _anim.SetTrigger("LightAttack");
+          _attackLocked = true;
+          }
         }
     }
 

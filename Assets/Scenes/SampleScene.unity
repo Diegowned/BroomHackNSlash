@@ -180,11 +180,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7710075076734705942, guid: b1b850b4af5b7244e8ae36ffe726638f,
+    - target: {fileID: 5888925576011717872, guid: b1b850b4af5b7244e8ae36ffe726638f,
         type: 3}
-      propertyPath: overrideMaterial
+      propertyPath: cameraRig
       value: 
-      objectReference: {fileID: 2100000, guid: 1626c32b38935e34b969afd2960612b6, type: 2}
+      objectReference: {fileID: 330585548}
     - target: {fileID: 7852787677109472539, guid: b1b850b4af5b7244e8ae36ffe726638f,
         type: 3}
       propertyPath: m_Name
@@ -193,15 +193,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 7852787677109472539, guid: b1b850b4af5b7244e8ae36ffe726638f,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1161555662}
-    - targetCorrespondingSourceObject: {fileID: 7852787677109472539, guid: b1b850b4af5b7244e8ae36ffe726638f,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1161555661}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b1b850b4af5b7244e8ae36ffe726638f, type: 3}
 --- !u!4 &101330095 stripped
 Transform:
@@ -811,55 +803,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1161555654 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7852787677109472539, guid: b1b850b4af5b7244e8ae36ffe726638f,
-    type: 3}
-  m_PrefabInstance: {fileID: 101330094}
-  m_PrefabAsset: {fileID: 0}
---- !u!54 &1161555661
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1161555654}
-  serializedVersion: 4
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 112
-  m_CollisionDetection: 0
---- !u!114 &1161555662
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1161555654}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ef160e59697bf914eba4f1106139b01d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cameraRig: {fileID: 330585548}
-  facingTurnSpeed: 900
-  yawEpsilon: 0.5
-  minFacingDistance: 0.2
 --- !u!1 &1795886020
 GameObject:
   m_ObjectHideFlags: 0
