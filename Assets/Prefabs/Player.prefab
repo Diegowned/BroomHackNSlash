@@ -180,6 +180,7 @@ GameObject:
   - component: {fileID: 4875565686506628709}
   - component: {fileID: 5888925576011717872}
   - component: {fileID: 5161141634743743039}
+  - component: {fileID: 7014300868498807030}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -363,6 +364,24 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
+--- !u!114 &7014300868498807030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7852787677109472539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95bdfe53b13572b47abdc6d251105e68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHP: 100
+  iFrameSeconds: 0.5
+  knockbackForce: 6
+  knockbackUp: 0
+  animator: {fileID: 0}
+  hurtTriggerName: Hurt
 --- !u!1001 &2403307517486390185
 PrefabInstance:
   m_ObjectHideFlags: 0
