@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,14 +5,13 @@ namespace BroomHackNSlash.CameraSystem
 {
     /// <summary>
     /// Devil May Cry-style third-person camera:
-    /// - Free-look orbit (mouse/controller via legacy axes)
-    /// - Soft lock-on with target cycling (Q/E or stick flick)
-    /// - Fixed shoulder bias (no swapping)
-    /// - No auto-recenter when idle
-    /// - Camera collision via sphere cast
-    /// - FOV pulse hooks
-    /// - Cursor lock/hide
-    /// Expose IsLocked/CurrentLockTarget and OnLockTargetChanged for UI (e.g., reticle).
+    /// - Free-look orbit (legacy Input axes)
+    /// - Soft lock-on to nearest visible enemy (toggle)
+    /// - Target cycling (Q/E or stick flick)
+    /// - Lock-hold API to prevent auto-reacquire/cycling during player moves (e.g., stance slide)
+    /// - Camera collision (sphere cast)
+    /// - Smooth damping + optional FOV pulses
+    /// Drop on Main Camera and assign a "followTarget" (child on player at head/chest height).
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public class DmcCameraRig : MonoBehaviour
@@ -31,23 +29,31 @@ namespace BroomHackNSlash.CameraSystem
         public float pitchMin = -20f;
         public float pitchMax = 70f;
 
-        [Tooltip("Disable any auto recentering when there is no look input. (Kept for clarity; no recenter code is active.)")]
-        public bool disableIdleRecenter = true;
+        [Tooltip("Disable any auto recentering when there is no look input (keeps last view).")]
+        public bool disableIdleRecenter = true;   // kept for inspector clarity (no code uses recenter)
 
         [Header("Lock-On")]
         public KeyCode lockOnKey = KeyCode.Tab;
         public string enemyTag = "Enemy";
         public float lockOnRadius = 18f;
         public float lockOnFOV = 65f;
-        [Tooltip("Horizontal offset (meters) to bias the camera to a shoulder when locked.")]
+        [Tooltip("Fixed horizontal offset (meters) to keep player slightly to one side in lock-on.")]
         public float shoulderOffset = 1.1f;
+
+        [Header("Lock-On: Cycling")]
+        public KeyCode prevTargetKey = KeyCode.Q;   // cycle left
+        public KeyCode nextTargetKey = KeyCode.E;   // cycle right
+        [Tooltip("Optional axis for cycling (e.g., RightStick X) with flick detection.")]
+        public string cycleAxis = "LockCycle";      // set up in Input Manager if desired
+        public float cycleFlickThreshold = 0.6f;
+        public float cycleAxisDebounce = 0.25f;
 
         [Header("Smoothing")]
         public float positionSmoothTime = 0.06f;
         public float rotationLerp = 20f;
 
         [Header("Collision")]
-        public LayerMask collisionMask = ~0;
+        public LayerMask collisionMask = ~0; // everything
         public float collisionSphereRadius = 0.25f;
         public float collisionBuffer = 0.1f;
 
@@ -60,33 +66,31 @@ namespace BroomHackNSlash.CameraSystem
         public string lookX = "Mouse X";
         public string lookY = "Mouse Y";
 
-        [Header("Lock-On: Cycling")]
-        public KeyCode prevTargetKey = KeyCode.Q;   // cycle left
-        public KeyCode nextTargetKey = KeyCode.E;   // cycle right
-
-        [Tooltip("Optional axis for cycling (e.g., map Right Stick X). Leave empty to ignore.")]
-        public string cycleAxis = "";               // e.g., "LockCycle"
-        public float cycleFlickThreshold = 0.6f;
-        public float cycleAxisDebounce = 0.25f;
-
-        // --- Public accessors / event for UI ---
-        public bool IsLocked => _isLocked;
-        public Transform CurrentLockTarget => _currentLockTarget;
-        public Action<Transform> OnLockTargetChanged;
-
         // --- State ---
         private Transform _currentLockTarget;
         private bool _isLocked;
         private int _shoulderSign = 1; // fixed to right shoulder (no swapping)
+
         private float _yaw;
         private float _pitch;
         private float _desiredDistance;
         private Vector3 _posVel;
         private Camera _cam;
-        private float _targetFOV;
-        private float _cycleAxisCooldown;
 
-        // ---------- Lifecycle ----------
+        private float _targetFOV;
+
+        // Cycling state
+        private float _cycleAxisCooldown = 0f;
+
+        // --- Target hold state (prevents cycling/reacquire while active) ---
+        private int _lockHoldDepth = 0;
+        private Transform _lockHoldTarget = null;
+
+        // --- Public accessors & events ---
+        public bool IsLocked => _isLocked;
+        public Transform CurrentLockTarget => _currentLockTarget;
+        public System.Action<Transform> OnLockTargetChanged;
+
         void Awake()
         {
             _cam = GetComponent<Camera>();
@@ -104,7 +108,7 @@ namespace BroomHackNSlash.CameraSystem
 
         void Start()
         {
-            // Lock & hide cursor while playing (Esc to free if you add your own pause/menu logic)
+            // Lock & hide cursor for play
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
@@ -119,9 +123,15 @@ namespace BroomHackNSlash.CameraSystem
             UpdateFOV();
         }
 
-        // ---------- Input & Lock ----------
         private void HandleInput()
         {
+            // Unlock cursor for menus
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+
             // Toggle lock-on
             if (Input.GetKeyDown(lockOnKey))
             {
@@ -140,18 +150,17 @@ namespace BroomHackNSlash.CameraSystem
             // Look input
             float lx = Input.GetAxisRaw(lookX);
             float ly = Input.GetAxisRaw(lookY);
-            bool hasLookInput = Mathf.Abs(lx) > 0.001f || Mathf.Abs(ly) > 0.001f;
 
             if (!_isLocked)
             {
-                // Free-look only (no recentering while idle)
+                // Free-look only; no idle recentering
                 float sens = IsMouseMoving() ? mouseSensitivity : controllerSensitivity;
                 _yaw += lx * sens * Time.deltaTime;
                 _pitch = Mathf.Clamp(_pitch - ly * sens * Time.deltaTime, pitchMin, pitchMax);
             }
             else
             {
-                // In lock-on, steer camera to frame player + target; allow gentle manual nudge
+                // Lock-on: steer to frame player + target; allow small manual nudges
                 if (_currentLockTarget)
                 {
                     Vector3 dirToTarget = _currentLockTarget.position - followTarget.position;
@@ -166,34 +175,33 @@ namespace BroomHackNSlash.CameraSystem
                     float desiredPitch = Mathf.Asin(lookDir.y) * Mathf.Rad2Deg;
                     _pitch = Mathf.MoveTowards(_pitch, Mathf.Clamp(desiredPitch, pitchMin, pitchMax), rotationLerp * Time.deltaTime);
 
-                    // Small manual nudges
+                    // Manual nudges
                     _yaw += lx * 40f * Time.deltaTime;
                     _pitch = Mathf.Clamp(_pitch - ly * 40f * Time.deltaTime, pitchMin, pitchMax);
                 }
             }
 
-            // Scroll wheel zoom
+            // Scroll zoom
             float scroll = Input.GetAxisRaw("Mouse ScrollWheel");
             if (Mathf.Abs(scroll) > 0.0001f)
-                _desiredDistance = Mathf.Clamp(_desiredDistance - scroll * 3.0f, minDistance, maxDistance);
-
-            // --- Target cycling while locked ---
-            if (_isLocked && _currentLockTarget)
             {
-                // Keyboard
+                _desiredDistance = Mathf.Clamp(_desiredDistance - scroll * 3.0f, minDistance, maxDistance);
+            }
+
+            // --- Target cycling while locked (blocked during lock-hold) ---
+            if (_isLocked && _currentLockTarget && _lockHoldDepth == 0)
+            {
                 if (Input.GetKeyDown(prevTargetKey)) CycleLockTarget(-1);
                 else if (Input.GetKeyDown(nextTargetKey)) CycleLockTarget(+1);
 
-                // Optional stick flick
-                if (!string.IsNullOrEmpty(cycleAxis))
+                float ax = 0f;
+                if (!string.IsNullOrEmpty(cycleAxis)) ax = Input.GetAxisRaw(cycleAxis);
+                if (_cycleAxisCooldown > 0f) _cycleAxisCooldown -= Time.deltaTime;
+
+                if (_cycleAxisCooldown <= 0f && Mathf.Abs(ax) >= cycleFlickThreshold)
                 {
-                    if (_cycleAxisCooldown > 0f) _cycleAxisCooldown -= Time.deltaTime;
-                    float ax = Input.GetAxisRaw(cycleAxis);
-                    if (_cycleAxisCooldown <= 0f && Mathf.Abs(ax) >= cycleFlickThreshold)
-                    {
-                        CycleLockTarget(Mathf.Sign(ax) > 0 ? +1 : -1);
-                        _cycleAxisCooldown = cycleAxisDebounce;
-                    }
+                    CycleLockTarget(Mathf.Sign(ax) > 0 ? +1 : -1);
+                    _cycleAxisCooldown = cycleAxisDebounce;
                 }
             }
         }
@@ -207,7 +215,9 @@ namespace BroomHackNSlash.CameraSystem
         {
             if (!_isLocked) return;
 
-            // If current target is invalid, try to reacquire; otherwise drop lock.
+            // If held (e.g., during stance slide), do not drop or reacquire
+            if (_lockHoldDepth > 0) return;
+
             if (!_currentLockTarget || !IsTargetValid(_currentLockTarget))
             {
                 AcquireLockTarget();
@@ -218,18 +228,16 @@ namespace BroomHackNSlash.CameraSystem
         private void AcquireLockTarget()
         {
             Transform best = null;
-            float bestScore = float.PositiveInfinity;
-
             Collider[] hits = Physics.OverlapSphere(followTarget.position, lockOnRadius, ~0, QueryTriggerInteraction.Ignore);
-            if (hits != null)
+            if (hits != null && hits.Length > 0)
             {
+                float bestScore = float.PositiveInfinity;
                 foreach (var h in hits)
                 {
                     if (!h || !h.CompareTag(enemyTag)) continue;
                     Transform t = h.transform;
                     if (!IsTargetValid(t)) continue;
 
-                    // Prefer near screen center, then closer distance
                     Vector3 vp = _cam.WorldToViewportPoint(t.position);
                     if (vp.z <= 0f) continue;
 
@@ -246,7 +254,6 @@ namespace BroomHackNSlash.CameraSystem
                     }
                 }
             }
-
             SetCurrentTarget(best);
         }
 
@@ -254,12 +261,12 @@ namespace BroomHackNSlash.CameraSystem
         {
             if (!t) return false;
 
-            // FOV cone
+            // FOV
             Vector3 to = (t.position - transform.position).normalized;
             float ang = Vector3.Angle(transform.forward, to);
             if (ang > lockOnFOV) return false;
 
-            // Line of sight
+            // LOS
             Vector3 head = t.position + Vector3.up * 1.2f;
             Vector3 origin = followTarget.position + Vector3.up * 0.3f;
             if (Physics.Linecast(origin, head, out RaycastHit hit, collisionMask, QueryTriggerInteraction.Ignore))
@@ -271,22 +278,6 @@ namespace BroomHackNSlash.CameraSystem
             float d = Vector3.Distance(followTarget.position, t.position);
             if (d > lockOnRadius + 0.5f) return false;
 
-            return true;
-        }
-
-        private bool IsTargetCandidateVisible(Transform t)
-        {
-            // Looser check used for cycling
-            Vector3 vp = _cam.WorldToViewportPoint(t.position + Vector3.up * 1.0f);
-            if (vp.z <= 0f) return false;
-            if (vp.x < -0.15f || vp.x > 1.15f || vp.y < -0.15f || vp.y > 1.15f) return false;
-
-            Vector3 origin = followTarget.position + Vector3.up * 0.3f;
-            Vector3 head = t.position + Vector3.up * 1.0f;
-            if (Physics.Linecast(origin, head, out RaycastHit hit, collisionMask, QueryTriggerInteraction.Ignore))
-            {
-                if (!hit.transform.IsChildOf(t) && hit.transform != t) return false;
-            }
             return true;
         }
 
@@ -305,24 +296,29 @@ namespace BroomHackNSlash.CameraSystem
             }
             if (candidates.Count == 0) return;
 
-            // Current viewport position
-            Vector3 curVp = _cam.WorldToViewportPoint(_currentLockTarget.position);
-            float curX = curVp.x;
+            Vector3 curVp3 = _cam.WorldToViewportPoint(_currentLockTarget.position);
+            float curX = curVp3.x;
 
             Transform best = null;
             float bestScore = float.PositiveInfinity;
 
-            // Primary pass: look to requested side
+            // Primary: look on desired side horizontally
             foreach (var t in candidates)
             {
                 if (t == _currentLockTarget) continue;
                 Vector3 vp = _cam.WorldToViewportPoint(t.position);
                 if (vp.z <= 0f) continue;
+
                 float dx = vp.x - curX;
-                if (dir > 0 && dx <= 0f) continue; // want right
-                if (dir < 0 && dx >= 0f) continue; // want left
-                float score = Mathf.Abs(dx) * 100f + Mathf.Abs(vp.y - curVp.y) * 10f;
-                if (score < bestScore) { bestScore = score; best = t; }
+                if (dir > 0 && dx <= 0f) continue;
+                if (dir < 0 && dx >= 0f) continue;
+
+                float score = Mathf.Abs(dx) * 100f + Mathf.Abs(vp.y - curVp3.y) * 10f;
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    best = t;
+                }
             }
 
             // Wrap-around if none on that side
@@ -333,15 +329,20 @@ namespace BroomHackNSlash.CameraSystem
                     if (t == _currentLockTarget) continue;
                     Vector3 vp = _cam.WorldToViewportPoint(t.position);
                     if (vp.z <= 0f) continue;
-                    float score = Mathf.Abs(vp.x - curX) * 100f + Mathf.Abs(vp.y - curVp.y) * 10f;
-                    if (score < bestScore) { bestScore = score; best = t; }
+                    float dx = vp.x - curX;
+                    float score = Mathf.Abs(dx) * 100f + Mathf.Abs(vp.y - curVp3.y) * 10f;
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        best = t;
+                    }
                 }
             }
 
             if (best)
             {
                 SetCurrentTarget(best);
-                // Optional gentle yaw nudge toward new target
+                // Optional: nudge yaw toward the new target
                 Vector3 flat = (best.position - followTarget.position); flat.y = 0f;
                 if (flat.sqrMagnitude > 0.001f)
                 {
@@ -351,29 +352,36 @@ namespace BroomHackNSlash.CameraSystem
             }
         }
 
-        private void SetCurrentTarget(Transform t)
+        private bool IsTargetCandidateVisible(Transform t)
         {
-            if (_currentLockTarget == t) return;
-            _currentLockTarget = t;
-            OnLockTargetChanged?.Invoke(_currentLockTarget);
+            Vector3 vp = _cam.WorldToViewportPoint(t.position + Vector3.up * 0.9f);
+            if (vp.z <= 0f) return false;
+            if (vp.x < -0.15f || vp.x > 1.15f || vp.y < -0.15f || vp.y > 1.15f) return false;
+
+            Vector3 origin = followTarget.position + Vector3.up * 0.3f;
+            Vector3 head = t.position + Vector3.up * 1.0f;
+            if (Physics.Linecast(origin, head, out RaycastHit hit, collisionMask, QueryTriggerInteraction.Ignore))
+            {
+                if (!hit.transform.IsChildOf(t) && hit.transform != t) return false;
+            }
+            return true;
         }
 
-        // ---------- Camera Transform ----------
         private void UpdateCameraTransform()
         {
-            // 1) Desired rotation from yaw/pitch
+            // 1) Compute desired rotation
             Quaternion rot = Quaternion.Euler(_pitch, _yaw, 0f);
 
-            // 2) Shoulder bias (fixed side; stronger while locked)
+            // 2) Fixed shoulder bias (smaller when free-look)
             float shoulder = _shoulderSign * shoulderOffset * (_isLocked ? 1.0f : 0.5f);
             Vector3 right = Quaternion.Euler(0f, _yaw, 0f) * Vector3.right;
             Vector3 localShoulder = right * shoulder;
 
-            // 3) Raw desired position before collision
+            // 3) Desired camera position before collision
             Vector3 pivot = followTarget.position + localShoulder;
             Vector3 desiredPos = pivot - (rot * Vector3.forward * _desiredDistance);
 
-            // 4) Collision: sphere cast from pivot toward desired
+            // 4) Collision: sphere cast from pivot to desiredPos
             Vector3 dir = (desiredPos - pivot).normalized;
             float maxDist = Vector3.Distance(pivot, desiredPos);
             if (Physics.SphereCast(pivot, collisionSphereRadius, dir, out RaycastHit hit, maxDist, collisionMask, QueryTriggerInteraction.Ignore))
@@ -382,16 +390,19 @@ namespace BroomHackNSlash.CameraSystem
                 desiredPos = pivot + dir * clippedDist;
             }
 
-            // 5) Smooth position
+            // 5) Smooth move
             Vector3 newPos = Vector3.SmoothDamp(transform.position, desiredPos, ref _posVel, positionSmoothTime);
 
-            // 6) Look target: followTarget (free) or midpoint (locked)
+            // 6) Look target
             Vector3 lookPoint = followTarget.position;
             if (_isLocked && _currentLockTarget)
+            {
                 lookPoint = Vector3.Lerp(followTarget.position, _currentLockTarget.position + Vector3.up * 0.9f, 0.45f);
+            }
 
             // 7) Apply
             transform.position = newPos;
+
             Quaternion lookRot = Quaternion.LookRotation((lookPoint - transform.position).normalized, Vector3.up);
             transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, rotationLerp * Time.deltaTime);
         }
@@ -401,7 +412,7 @@ namespace BroomHackNSlash.CameraSystem
             _cam.fieldOfView = Mathf.Lerp(_cam.fieldOfView, _targetFOV, Time.deltaTime * fovLerp);
         }
 
-        /// <summary>Pulse the FOV briefly (e.g., on dash/attack): PulseFOV(8f, 0.2f)</summary>
+        /// <summary>Kick the FOV briefly (e.g., on dash or big hit).</summary>
         public void PulseFOV(float extra, float duration)
         {
             StopAllCoroutines();
@@ -414,36 +425,55 @@ namespace BroomHackNSlash.CameraSystem
             float start = _cam.fieldOfView;
             float peak = Mathf.Clamp(defaultFOV + extra, 10f, 120f);
 
-            // Ease to peak
-            float up = duration * 0.4f;
-            while (t < up)
+            // Ease out to peak
+            while (t < duration * 0.4f)
             {
                 t += Time.deltaTime;
-                float a = Mathf.Clamp01(t / up);
+                float a = Mathf.Clamp01(t / (duration * 0.4f));
                 _targetFOV = Mathf.Lerp(start, peak, a);
                 yield return null;
             }
 
             // Ease back
             t = 0f;
-            float dn = duration * 0.6f;
-            while (t < dn)
+            while (t < duration * 0.6f)
             {
                 t += Time.deltaTime;
-                float a = Mathf.Clamp01(t / dn);
+                float a = Mathf.Clamp01(t / (duration * 0.6f));
                 _targetFOV = Mathf.Lerp(peak, defaultFOV, a);
                 yield return null;
             }
             _targetFOV = defaultFOV;
         }
 
-        /// <summary>Set a wider FOV while true (e.g., sprint). Resets to default when false.</summary>
+        /// <summary>Set a wider FOV while true; returns to default when false.</summary>
         public void SetWideFOV(bool wide)
         {
             _targetFOV = wide ? sprintOrAttackFOV : defaultFOV;
         }
 
-        // ---------- Debug ----------
+        // --- Lock-hold API (for stance/parry/etc.) ---
+        public void PushLockHold(Transform t)
+        {
+            _lockHoldDepth++;
+            _lockHoldTarget = t ? t : _currentLockTarget;
+            if (_lockHoldTarget) { _isLocked = true; SetCurrentTarget(_lockHoldTarget); }
+        }
+
+        public void PopLockHold()
+        {
+            if (_lockHoldDepth > 0) _lockHoldDepth--;
+            if (_lockHoldDepth == 0) _lockHoldTarget = null;
+        }
+
+        // --- Helpers ---
+        private void SetCurrentTarget(Transform t)
+        {
+            if (_currentLockTarget == t) return;
+            _currentLockTarget = t;
+            OnLockTargetChanged?.Invoke(_currentLockTarget);
+        }
+
         void OnDrawGizmosSelected()
         {
             if (followTarget)
