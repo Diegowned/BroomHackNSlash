@@ -399,16 +399,15 @@ MonoBehaviour:
   animator: {fileID: 8084197579196065336}
   defendBool: Defend
   defendHitTrigger: DefendHit
-  movementComponents:
-  - {fileID: 4875565686506628709}
   arcDegrees: 160
   slideTime: 0.22
   minDistance: 1.5
   maxDistance: 3.5
-  groundSnapDown: 2
+  groundProbeRadius: 0.3
+  groundProbeDown: 2.5
   groundMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 256
   stanceIFramesOnHit: 0.35
   ignoreDamageInStance: 1
   faceAttackerDuringSlide: 1

@@ -180,16 +180,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 2228792385503658271, guid: b1b850b4af5b7244e8ae36ffe726638f,
-        type: 3}
-      propertyPath: groundMask.m_Bits
-      value: 256
-      objectReference: {fileID: 0}
-    - target: {fileID: 2228792385503658271, guid: b1b850b4af5b7244e8ae36ffe726638f,
-        type: 3}
-      propertyPath: faceAttackerDuringSlide
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 5888925576011717872, guid: b1b850b4af5b7244e8ae36ffe726638f,
         type: 3}
       propertyPath: cameraRig
@@ -479,7 +469,7 @@ MonoBehaviour:
   enemyTag: Enemy
   lockOnRadius: 18
   lockOnFOV: 65
-  shoulderOffset: 1.1
+  shoulderOffset: 3
   prevTargetKey: 113
   nextTargetKey: 101
   cycleAxis: 
