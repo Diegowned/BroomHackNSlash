@@ -178,7 +178,6 @@ GameObject:
   - component: {fileID: 8348654560350001449}
   - component: {fileID: 540935273164137090}
   - component: {fileID: 4875565686506628709}
-  - component: {fileID: 5888925576011717872}
   - component: {fileID: 5161141634743743039}
   - component: {fileID: 7014300868498807030}
   - component: {fileID: 2228792385503658271}
@@ -322,22 +321,6 @@ MonoBehaviour:
   rotationSpeed: 720
   jumpHeight: 1.5
   gravity: -20
---- !u!114 &5888925576011717872
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7852787677109472539}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ef160e59697bf914eba4f1106139b01d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cameraRig: {fileID: 0}
-  facingTurnSpeed: 900
-  yawEpsilon: 0.5
-  minFacingDistance: 0.2
 --- !u!54 &5161141634743743039
 Rigidbody:
   m_ObjectHideFlags: 0
