@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 4520333501978908314}
   - component: {fileID: 837502208394532244}
   - component: {fileID: 6355336599404616109}
-  - component: {fileID: 7159683243456573107}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -140,49 +139,6 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
---- !u!114 &7159683243456573107
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1601088928367580415}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c16ec128cb3a954781ca727c6432ac8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  followTarget: {fileID: 0}
-  distance: 5.5
-  minDistance: 1
-  maxDistance: 7.5
-  mouseSensitivity: 140
-  controllerSensitivity: 220
-  pitchMin: -20
-  pitchMax: 70
-  disableIdleRecenter: 1
-  lockOnKey: 9
-  enemyTag: Enemy
-  lockOnRadius: 18
-  lockOnFOV: 65
-  shoulderOffset: 3
-  prevTargetKey: 113
-  nextTargetKey: 101
-  cycleAxis: 
-  cycleFlickThreshold: 0.6
-  cycleAxisDebounce: 0.25
-  positionSmoothTime: 0
-  rotationLerp: 100
-  collisionMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  collisionSphereRadius: 0.25
-  collisionBuffer: 0.1
-  defaultFOV: 60
-  sprintOrAttackFOV: 68
-  fovLerp: 6
-  lookX: Mouse X
-  lookY: Mouse Y
 --- !u!1 &2349131220939430970
 GameObject:
   m_ObjectHideFlags: 0
