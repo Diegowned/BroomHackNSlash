@@ -13,6 +13,7 @@ public class EnemyHealth : MonoBehaviour, IDamageable, IHealthReadable
     public string deathTrigger = "Death";
 
     private float _hp;
+    private Rigidbody _rb;
 
     public float CurrentHP => _hp;
     public float MaxHP => maxHP;
@@ -22,6 +23,7 @@ public class EnemyHealth : MonoBehaviour, IDamageable, IHealthReadable
     void Awake()
     {
         _hp = Mathf.Max(1f, maxHP);
+        _rb = GetComponent<Rigidbody>();
         if (!animator) animator = GetComponentInChildren<Animator>();
         OnHealthChanged?.Invoke(_hp, maxHP);
     }
@@ -32,6 +34,12 @@ public class EnemyHealth : MonoBehaviour, IDamageable, IHealthReadable
 
         _hp = Mathf.Max(0f, _hp - Mathf.Max(0f, ctx.amount));
         OnHealthChanged?.Invoke(_hp, maxHP);
+
+        if (ctx.launchForce > 0 && _rb != null)
+        {
+            _rb.velocity = Vector3.zero; // Reset velocity before applying new force
+            _rb.AddForce(Vector3.up * ctx.launchForce, ForceMode.Impulse);
+        }
 
         if (animator && !string.IsNullOrEmpty(hitTrigger)) animator.SetTrigger(hitTrigger);
 

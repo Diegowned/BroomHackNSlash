@@ -22,15 +22,15 @@ namespace BroomHackNSlash.CameraSystem
         public float collisionBuffer = 0.1f;
 
         [Header("Lock-On (optional)")]
-        public KeyCode lockOnKey = KeyCode.Tab;
+        public string lockOnButton = "LockOn";
         public string enemyTag = "Enemy";
         public float lockOnRadius = 18f;
         public float lockOnFOV = 80f;
 
-        [Header("Target Switching")] 
-        public KeyCode switchLeftKey = KeyCode.Q; 
-        public KeyCode switchRightKey = KeyCode.E; 
-        [Tooltip("Seconds between switch inputs")] public float switchCooldown = 0.25f; 
+        [Header("Target Switching")]
+        public string switchLeftButton = "SwitchLeft";
+        public string switchRightButton = "SwitchRight";
+        [Tooltip("Seconds between switch inputs")] public float switchCooldown = 0.25f;
 
         [Header("Framing")]
         [Tooltip("Vertical offset applied to followTarget when framing")] public float followHeightOffset = 0.9f;
@@ -70,18 +70,23 @@ namespace BroomHackNSlash.CameraSystem
         {
             if (!followTarget) return;
 
-            // Toggle lock-on
-            if (Input.GetKeyDown(lockOnKey))
+            // Hold-to-lock
+            if (Input.GetButtonDown(lockOnButton))
             {
-                if (_isLocked) { _isLocked = false; SetCurrentTarget(null); }
-                else { AcquireLockTarget(); _isLocked = _currentLockTarget != null; }
+                AcquireLockTarget();
+                _isLocked = _currentLockTarget != null;
+            }
+            else if (Input.GetButtonUp(lockOnButton))
+            {
+                _isLocked = false;
+                SetCurrentTarget(null);
             }
 
             // Switch targets while locked
             if (_isLocked && Time.time >= _nextSwitchTime)
             {
-                if (Input.GetKeyDown(switchRightKey)) { if (SwitchTarget(true)) _nextSwitchTime = Time.time + switchCooldown; }
-                else if (Input.GetKeyDown(switchLeftKey)) { if (SwitchTarget(false)) _nextSwitchTime = Time.time + switchCooldown; }
+                if (Input.GetButtonDown(switchRightButton)) { if (SwitchTarget(true)) _nextSwitchTime = Time.time + switchCooldown; }
+                else if (Input.GetButtonDown(switchLeftButton)) { if (SwitchTarget(false)) _nextSwitchTime = Time.time + switchCooldown; }
             }
 
             // Anchor selection

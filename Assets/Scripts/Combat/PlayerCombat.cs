@@ -21,7 +21,9 @@ namespace BroomHackNSlash.Combat
         public string lightAttackButton = "Fire1";
 
         [Header("Attacks")]
-        public AttackData startingAttack;
+        public AttackData neutralStartingAttack;
+        public AttackData forwardStartingAttack;
+        public AttackData backwardStartingAttack;
         public LayerMask damageToLayers;
 
         [Header("References")]
@@ -30,6 +32,7 @@ namespace BroomHackNSlash.Combat
 
         private Animator _anim;
         private SimplePlayerController _playerController;
+        private BroomHackNSlash.CameraSystem.DmcCameraRig _dmcCameraRig;
         private CombatState _currentState;
         private AttackData _currentAttack;
         private bool _comboWindowIsOpen;
@@ -45,7 +48,12 @@ namespace BroomHackNSlash.Combat
         {
             _anim = GetComponent<Animator>();
             _playerController = GetComponent<SimplePlayerController>();
-            cameraTransform = Camera.main != null ? Camera.main.transform : null;
+            var mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                cameraTransform = mainCamera.transform;
+                _dmcCameraRig = mainCamera.GetComponent<BroomHackNSlash.CameraSystem.DmcCameraRig>();
+            }
 
             foreach (var hb in hitboxes)
             {
@@ -88,7 +96,14 @@ namespace BroomHackNSlash.Combat
                     if (_attackBuffered)
                     {
                         _attackBuffered = false;
-                        ExecuteAttack(startingAttack);
+                        var direction = GetAttackDirection();
+                        AttackData attackToExecute = direction switch
+                        {
+                            AttackDirection.Forward => forwardStartingAttack,
+                            AttackDirection.Backward => backwardStartingAttack,
+                            _ => neutralStartingAttack
+                        };
+                        ExecuteAttack(attackToExecute);
                     }
                     break;
                 case CombatState.Attacking:
@@ -128,27 +143,18 @@ namespace BroomHackNSlash.Combat
 
         private AttackDirection GetAttackDirection()
         {
-            Vector2 input = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-            if (input.sqrMagnitude < 0.1f)
+            if (_dmcCameraRig == null || !_dmcCameraRig.IsLocked)
             {
                 return AttackDirection.Neutral;
             }
 
-            Vector3 camForward = cameraTransform.forward;
-            Vector3 camRight = cameraTransform.right;
-            camForward.y = 0;
-            camRight.y = 0;
-            camForward.Normalize();
-            camRight.Normalize();
+            float vertical = Input.GetAxis("Vertical");
 
-            Vector3 moveDirection = (camForward * input.y + camRight * input.x).normalized;
-            float dot = Vector3.Dot(transform.forward, moveDirection);
-
-            if (dot > 0.7f)
+            if (vertical > 0.8f)
             {
                 return AttackDirection.Forward;
             }
-            if (dot < -0.7f)
+            if (vertical < -0.8f)
             {
                 return AttackDirection.Backward;
             }
@@ -202,14 +208,15 @@ namespace BroomHackNSlash.Combat
 
             if (other.TryGetComponent<IDamageable>(out var dmg))
             {
-                var ctx = new DamageContext
-                {
-                    amount = _currentAttack.damage,
-                    stunSeconds = _currentAttack.stunSeconds,
-                    source = transform,
-                    hitPoint = other.ClosestPoint(hb.transform.position),
-                    hitDirection = (other.transform.position - transform.position).normalized
-                };
+            var ctx = new DamageContext
+            {
+                amount = _currentAttack.damage,
+                stunSeconds = _currentAttack.stunSeconds,
+                launchForce = _currentAttack.launchForce,
+                source = transform,
+                hitPoint = other.ClosestPoint(hb.transform.position),
+                hitDirection = (other.transform.position - transform.position).normalized
+            };
                 dmg.TakeDamage(ctx);
                 CombatDebugOverlay.ReportDamage(ctx, other);
             }

@@ -24,3 +24,5 @@ MonoBehaviour:
   followUps:
   - requiredDirection: 0
     nextAttack: {fileID: 11400000, guid: 4221bceddddc11b4a8b960da23f47486, type: 2}
+  - requiredDirection: 2
+    nextAttack: {fileID: 11400000, guid: f3bd1d2d8239b854b9d2c1bd19cf6420, type: 2}

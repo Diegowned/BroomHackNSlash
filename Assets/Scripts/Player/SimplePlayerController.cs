@@ -15,6 +15,10 @@ namespace BroomHackNSlash.Character
         [SerializeField]
         private float moveSpeed = 6f;
 
+        [Tooltip("Multiplier for movement speed when walking backwards while locked on.")]
+        [SerializeField]
+        public float lockedOnBackwardsSpeedModifier = 0.75f;
+
         [Tooltip("Degrees per second the character rotates to face the move direction.")]
         [SerializeField]
         private float rotationSpeed = 720f;
@@ -54,10 +58,10 @@ namespace BroomHackNSlash.Character
         {
             Vector2 input = ReadMovementInput();
             Vector3 movement = Vector3.zero;
+            float currentMoveSpeed = moveSpeed;
 
             if (input.sqrMagnitude > 0.0001f)
             {
-                // Align movement with the camera's orientation when available.
                 Vector3 forward = cameraTransform != null ? cameraTransform.forward : Vector3.forward;
                 Vector3 right = cameraTransform != null ? cameraTransform.right : Vector3.right;
 
@@ -68,7 +72,17 @@ namespace BroomHackNSlash.Character
 
                 movement = forward * input.y + right * input.x;
                 movement.Normalize();
-                movement *= moveSpeed;
+
+                if (dmcCameraRig != null && dmcCameraRig.IsLocked)
+                {
+                    float dot = Vector3.Dot(transform.forward, movement);
+                    if (dot < -0.8f) // Moving backwards
+                    {
+                        currentMoveSpeed *= lockedOnBackwardsSpeedModifier;
+                    }
+                }
+
+                movement *= currentMoveSpeed;
 
                 RotateTowards(movement);
             }
