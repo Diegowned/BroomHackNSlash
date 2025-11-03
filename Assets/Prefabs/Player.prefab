@@ -297,8 +297,8 @@ Transform:
   m_GameObject: {fileID: 7404083420382988157}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.327, z: 0.695}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: -0.115, z: 0.695}
+  m_LocalScale: {x: 0.43807665, y: 1.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4232541363260780857}
@@ -525,6 +525,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 6
+  lockedOnBackwardsSpeedModifier: 1
   rotationSpeed: 720
   jumpHeight: 1.5
   gravity: -20
@@ -635,7 +636,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lightAttackButton: Fire1
-  startingAttack: {fileID: 11400000, guid: 2a89621c59dadff46ac05977afe476d5, type: 2}
+  neutralStartingAttack: {fileID: 11400000, guid: 2a89621c59dadff46ac05977afe476d5,
+    type: 2}
+  forwardStartingAttack: {fileID: 11400000, guid: f3bd1d2d8239b854b9d2c1bd19cf6420,
+    type: 2}
+  backwardStartingAttack: {fileID: 11400000, guid: f3bd1d2d8239b854b9d2c1bd19cf6420,
+    type: 2}
   damageToLayers:
     serializedVersion: 2
     m_Bits: 64
@@ -643,6 +649,7 @@ MonoBehaviour:
   - {fileID: 8292173038920974367}
   - {fileID: 8981189742911029174}
   - {fileID: 153208872225536480}
+  - {fileID: 7093340460502041860}
 --- !u!1 &7900043968148651460
 GameObject:
   m_ObjectHideFlags: 0

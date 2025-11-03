@@ -143,21 +143,44 @@ namespace BroomHackNSlash.Combat
 
         private AttackDirection GetAttackDirection()
         {
-            if (_dmcCameraRig == null || !_dmcCameraRig.IsLocked)
+            if (_dmcCameraRig == null || !_dmcCameraRig.IsLocked || _dmcCameraRig.CurrentLockTarget == null)
             {
                 return AttackDirection.Neutral;
             }
 
-            float vertical = Input.GetAxis("Vertical");
+            Vector2 input = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+            if (input.sqrMagnitude < 0.1f)
+            {
+                return AttackDirection.Neutral;
+            }
 
-            if (vertical > 0.8f)
+            // Get the camera-relative input direction
+            Vector3 camForward = cameraTransform.forward;
+            camForward.y = 0;
+            camForward.Normalize();
+            Vector3 camRight = cameraTransform.right;
+            camRight.y = 0;
+            camRight.Normalize();
+            Vector3 inputDir = (camForward * input.y + camRight * input.x).normalized;
+
+            // Get the direction from player to enemy
+            Vector3 toEnemyDir = _dmcCameraRig.CurrentLockTarget.position - transform.position;
+            toEnemyDir.y = 0;
+            toEnemyDir.Normalize();
+
+            // Compare the angle between the player's input and the direction to the enemy
+            float angle = Vector3.SignedAngle(inputDir, toEnemyDir, Vector3.up);
+
+            // Check if input is generally towards or away from the enemy
+            if (Mathf.Abs(angle) < 45.0f)
             {
                 return AttackDirection.Forward;
             }
-            if (vertical < -0.8f)
+            if (Mathf.Abs(angle) > 135.0f)
             {
                 return AttackDirection.Backward;
             }
+
             return AttackDirection.Neutral;
         }
 
@@ -219,6 +242,38 @@ namespace BroomHackNSlash.Combat
             };
                 dmg.TakeDamage(ctx);
                 CombatDebugOverlay.ReportDamage(ctx, other);
+            }
+        }
+
+        void OnDrawGizmos()
+        {
+            if (_dmcCameraRig != null && _dmcCameraRig.IsLocked && _dmcCameraRig.CurrentLockTarget != null)
+            {
+                Vector2 input = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+                if (input.sqrMagnitude > 0.1f)
+                {
+                    // Get the camera-relative input direction
+                    Vector3 camForward = cameraTransform.forward;
+                    camForward.y = 0;
+                    camForward.Normalize();
+                    Vector3 camRight = cameraTransform.right;
+                    camRight.y = 0;
+                    camRight.Normalize();
+                    Vector3 inputDir = (camForward * input.y + camRight * input.x).normalized;
+
+                    // Get the direction from player to enemy
+                    Vector3 toEnemyDir = _dmcCameraRig.CurrentLockTarget.position - transform.position;
+                    toEnemyDir.y = 0;
+                    toEnemyDir.Normalize();
+
+                    // Draw the player's input direction (relative to camera)
+                    Gizmos.color = Color.blue;
+                    Gizmos.DrawLine(transform.position, transform.position + inputDir * 2);
+
+                    // Draw the direction to the enemy
+                    Gizmos.color = Color.red;
+                    Gizmos.DrawLine(transform.position, transform.position + toEnemyDir * 2);
+                }
             }
         }
     }

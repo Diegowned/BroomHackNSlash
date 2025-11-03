@@ -17,7 +17,7 @@ MonoBehaviour:
   clip: {fileID: 7400000, guid: 0a3f26ec0d7cd6a4485d7ab2f9c4df9f, type: 2}
   damage: 10
   stunSeconds: 0.2
-  launchForce: 5
+  launchForce: 10
   comboWindowStartFrame: 0
   comboWindowEndFrame: 0
   recoveryFrames: 0
