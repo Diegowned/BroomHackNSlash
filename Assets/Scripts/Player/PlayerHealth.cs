@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using BroomHackNSlash.Combat;
 
 public class PlayerHealth : MonoBehaviour, IDamageable
 {

@@ -30,12 +30,18 @@ namespace BroomHackNSlash.Character
 
         private CharacterController characterController;
         private Transform cameraTransform;
+        private BroomHackNSlash.CameraSystem.DmcCameraRig dmcCameraRig;
         private float verticalVelocity;
 
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
-            cameraTransform = Camera.main != null ? Camera.main.transform : null;
+            var mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                cameraTransform = mainCamera.transform;
+                dmcCameraRig = mainCamera.GetComponent<BroomHackNSlash.CameraSystem.DmcCameraRig>();
+            }
         }
 
         private void Update()
@@ -73,13 +79,25 @@ namespace BroomHackNSlash.Character
 
         private void RotateTowards(Vector3 direction)
         {
+            if (dmcCameraRig != null && dmcCameraRig.IsLocked && dmcCameraRig.CurrentLockTarget != null)
+            {
+                Vector3 targetDirection = dmcCameraRig.CurrentLockTarget.position - transform.position;
+                targetDirection.y = 0;
+                if (targetDirection.sqrMagnitude > 0.0001f)
+                {
+                    Quaternion targetRotation = Quaternion.LookRotation(targetDirection, Vector3.up);
+                    transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+                }
+                return;
+            }
+
             if (direction.sqrMagnitude < 0.0001f)
             {
                 return;
             }
 
-            Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+            Quaternion freeRotation = Quaternion.LookRotation(direction, Vector3.up);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, freeRotation, rotationSpeed * Time.deltaTime);
         }
 
         private void HandleJumpAndGravity()

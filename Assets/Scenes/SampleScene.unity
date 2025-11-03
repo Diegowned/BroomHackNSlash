@@ -180,6 +180,16 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4155986506743233099, guid: b1b850b4af5b7244e8ae36ffe726638f,
+        type: 3}
+      propertyPath: hitboxes.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4155986506743233099, guid: b1b850b4af5b7244e8ae36ffe726638f,
+        type: 3}
+      propertyPath: hitboxes.Array.data[2]
+      value: 
+      objectReference: {fileID: 537536290}
     - target: {fileID: 7852787677109472539, guid: b1b850b4af5b7244e8ae36ffe726638f,
         type: 3}
       propertyPath: m_Name
@@ -760,6 +770,18 @@ MonoBehaviour:
   animator: {fileID: 0}
   hitTrigger: Hit
   deathTrigger: Death
+--- !u!114 &537536290 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 153208872225536480, guid: b1b850b4af5b7244e8ae36ffe726638f,
+    type: 3}
+  m_PrefabInstance: {fileID: 101330094}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67531803814e21642b49619d412e57c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &785418713
 GameObject:
   m_ObjectHideFlags: 0

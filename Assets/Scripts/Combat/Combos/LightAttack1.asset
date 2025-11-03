@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c43ebcd59bf417f4ebbd6c9be19f3ea9, type: 3}
+  m_Name: LightAttack1
+  m_EditorClassIdentifier: 
+  attackName: LightAttack1
+  animationTrigger: LightAttack1
+  clip: {fileID: 7400000, guid: 6c5b326d18553604081417fc89382087, type: 2}
+  damage: 10
+  stunSeconds: 0.2
+  launchForce: 0
+  comboWindowStartFrame: 0
+  comboWindowEndFrame: 0
+  recoveryFrames: 0
+  followUps:
+  - requiredDirection: 0
+    nextAttack: {fileID: 11400000, guid: 4221bceddddc11b4a8b960da23f47486, type: 2}
